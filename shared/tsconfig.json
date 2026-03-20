@@ -6,6 +6,7 @@
     "declaration": true,
     "strict": true,
     "esModuleInterop": true,
+    "composite": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
