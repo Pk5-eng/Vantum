@@ -10,7 +10,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true
+    "declaration": true,
+    "paths": {
+      "@vantum/shared": ["../shared/src"]
+    },
+    "baseUrl": "."
   },
   "include": ["src/**/*"],
   "references": [{ "path": "../shared" }]
