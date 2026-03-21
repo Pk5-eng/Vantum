@@ -2,10 +2,10 @@
 nixPkgs = ["nodejs_22"]
 
 [phases.install]
-cmds = ["cd backend && npm install"]
+cmds = ["npm install"]
 
 [phases.build]
-cmds = ["cd shared && npx tsc && cd ../backend && npx tsc"]
+cmds = ["npm run build -w @vantum/shared && npm run build -w @vantum/backend"]
 
 [start]
 cmd = "node backend/dist/index.js"

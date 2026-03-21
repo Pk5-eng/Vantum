@@ -48,7 +48,7 @@ const server = http.createServer(app);
 // WebSocket setup
 setupWebSocket(server);
 
-server.listen(config.port, () => {
+server.listen(config.port, "0.0.0.0", () => {
   console.log(`Vantum backend listening on http://localhost:${config.port}`);
   console.log(`WebSocket server available at ws://localhost:${config.port}/ws`);
 });
