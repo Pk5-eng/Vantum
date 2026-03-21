@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import type http from "http";
 import { verifyToken } from "./auth";
 import { submitGuestReply } from "./conversation-engine";
-import type { WSEvent } from "../../shared/src/types";
+import type { WSEvent } from "@vantum/shared";
 
 interface ConnectedClient {
   ws: WebSocket;
@@ -67,7 +67,7 @@ export function setupWebSocket(server: http.Server): WebSocketServer {
       try {
         const event = JSON.parse(data.toString());
         handleMessage(client, event);
-      } catch (err) {
+      } catch {
         ws.send(
           JSON.stringify({
             type: "error",

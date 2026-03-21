@@ -36,14 +36,11 @@ export async function generateHostMessage(
   const isFirstTurn = turnNumber === 0;
   const isLastTurn = turnNumber >= maxTurns - 1;
 
-  let instruction = "";
-  if (isFirstTurn) {
-    instruction = `Begin the conversation on the topic: "${topic}". Introduce yourself briefly and ask your first question.`;
-  } else if (isLastTurn) {
-    instruction = `This is the final turn. Provide a brief closing remark and thank the guest.`;
-  } else {
-    instruction = `Continue the conversation on "${topic}". Respond to what the guest said and ask a follow-up question.`;
-  }
+  const instruction = isFirstTurn
+    ? `Begin the conversation on the topic: "${topic}". Introduce yourself briefly and ask your first question.`
+    : isLastTurn
+      ? `This is the final turn. Provide a brief closing remark and thank the guest.`
+      : `Continue the conversation on "${topic}". Respond to what the guest said and ask a follow-up question.`;
 
   const messages: { role: "user" | "assistant"; content: string }[] = [
     ...conversationHistory,

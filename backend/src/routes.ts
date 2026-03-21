@@ -2,7 +2,7 @@ import { Router } from "express";
 import * as redis from "./redis";
 import { signToken } from "./auth";
 import { startConversation } from "./conversation-engine";
-import type { RegisterAgentRequest, TranscriptExport } from "../../shared/src/types";
+import type { RegisterAgentRequest, TranscriptExport } from "@vantum/shared";
 
 function uuid(): string {
   return crypto.randomUUID();

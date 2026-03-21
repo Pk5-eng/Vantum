@@ -1,5 +1,5 @@
 import Redis from "ioredis";
-import type { Room } from "../../shared/src/types";
+import type { Room } from "@vantum/shared";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 

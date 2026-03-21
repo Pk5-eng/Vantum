@@ -1,6 +1,6 @@
 import Redis from "ioredis";
 import { config } from "./config";
-import type { Room, Conversation, ConversationMessage } from "../../shared/src/types";
+import type { Room, Conversation, ConversationMessage } from "@vantum/shared";
 
 let redis: Redis;
 

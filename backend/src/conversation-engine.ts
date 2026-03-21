@@ -1,4 +1,4 @@
-import type { Conversation, ConversationMessage } from "../../shared/src/types";
+import type { Conversation, ConversationMessage } from "@vantum/shared";
 import * as redis from "./redis";
 import { generateHostMessage, generateSynthesis } from "./host-agent";
 import { config } from "./config";
