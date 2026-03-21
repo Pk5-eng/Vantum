@@ -67,7 +67,7 @@ export function setupWebSocket(server: http.Server): WebSocketServer {
       try {
         const event = JSON.parse(data.toString());
         handleMessage(client, event);
-      } catch (err) {
+      } catch {
         ws.send(
           JSON.stringify({
             type: "error",

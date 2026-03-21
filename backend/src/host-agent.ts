@@ -36,7 +36,7 @@ export async function generateHostMessage(
   const isFirstTurn = turnNumber === 0;
   const isLastTurn = turnNumber >= maxTurns - 1;
 
-  let instruction = "";
+  let instruction;
   if (isFirstTurn) {
     instruction = `Begin the conversation on the topic: "${topic}". Introduce yourself briefly and ask your first question.`;
   } else if (isLastTurn) {
