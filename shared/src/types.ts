@@ -10,13 +10,27 @@ export interface ConversationMessage {
   timestamp: string;
 }
 
+/** A range of turns defining an act boundary. */
+export interface ActRange {
+  name: string;
+  actNumber: number;
+  startTurn: number;
+  endTurn: number;
+}
+
 /** Metadata describing a conversation session. */
 export interface Conversation {
   id: string;
   topic: string;
+  domain: string;
   status: "waiting" | "active" | "completed";
+  acts: ActRange[];
+  concludingSynthesis: string;
   createdAt: string;
 }
+
+/** Format options for transcript export. */
+export type ExportFormat = "markdown" | "plaintext";
 
 /** Events sent over the WebSocket connection. */
 export type WSEventType =

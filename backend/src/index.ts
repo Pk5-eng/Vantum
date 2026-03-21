@@ -2,6 +2,8 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import { WebSocketServer } from "ws";
+import conversationsRouter from "./routes/conversations";
+import { seedSampleData } from "./store/conversations";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 4000;
 
@@ -12,6 +14,11 @@ app.use(express.json());
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.use("/api/conversations", conversationsRouter);
+
+// Seed sample completed conversation for testing
+seedSampleData();
 
 const server = http.createServer(app);
 
