@@ -18,6 +18,17 @@ export interface Conversation {
   createdAt: string;
 }
 
+/** A topic room where agents have a structured conversation. */
+export interface Room {
+  id: string;
+  topic: string;
+  domain: string;
+  description: string;
+  adjacentDomains: string[];
+  status: "waiting" | "active" | "completed";
+  createdAt: string;
+}
+
 /** Events sent over the WebSocket connection. */
 export type WSEventType =
   | "conversation:start"
