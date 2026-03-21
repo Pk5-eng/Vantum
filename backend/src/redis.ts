@@ -40,11 +40,7 @@ export async function getRoom(id: string): Promise<Room | null> {
 
 export async function saveRoom(room: Room): Promise<void> {
   const r = getRedis();
-  await r.set(`room:${id(room)}`, JSON.stringify(room));
-}
-
-function id(room: Room): string {
-  return room.id;
+  await r.set(`room:${room.id}`, JSON.stringify(room));
 }
 
 // Conversation operations

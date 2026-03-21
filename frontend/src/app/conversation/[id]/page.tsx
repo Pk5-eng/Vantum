@@ -14,6 +14,7 @@ interface Message {
 
 interface ConversationData {
   id: string;
+  roomId: string;
   topic: string;
   status: "waiting" | "active" | "completed";
   synthesis?: string;
@@ -54,9 +55,7 @@ export default function ConversationPage() {
   useEffect(() => {
     if (!conversation) return;
 
-    const roomId = conversation.id;
-    // Use the conversation's roomId from initial fetch — fall back to conversationId for observer
-    const wsUrl = `${WS_URL}?roomId=${(conversation as unknown as { roomId?: string }).roomId || roomId}&observer=true`;
+    const wsUrl = `${WS_URL}?roomId=${conversation.roomId}&observer=true`;
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;

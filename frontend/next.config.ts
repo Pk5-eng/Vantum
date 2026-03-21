@@ -1,11 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  output: "standalone",
-  // Allow API requests to the backend
-  async rewrites() {
-    return [];
-  },
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

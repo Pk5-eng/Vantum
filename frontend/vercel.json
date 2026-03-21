@@ -1,6 +1,3 @@
 {
-  "framework": "nextjs",
-  "installCommand": "cd .. && npm ci",
-  "buildCommand": "cd .. && npm run build -w @vantum/shared && cd frontend && npx next build",
-  "outputDirectory": ".next"
+  "framework": "nextjs"
 }

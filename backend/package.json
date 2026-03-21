@@ -7,7 +7,7 @@
     "build": "cd ../shared && npx tsc && cd ../backend && tsc",
     "start": "node dist/index.js",
     "lint": "eslint src/",
-    "seed": "ts-node src/seed.ts"
+    "seed": "node dist/seed.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
