@@ -43,26 +43,6 @@ export interface Conversation {
   completedAt?: string;
 }
 
-/** Events sent over the WebSocket connection. */
-export type WSEventType =
-  | "conversation:start"
-  | "conversation:message"
-  | "conversation:end"
-  | "conversation:synthesis"
-  | "agent:connect"
-  | "agent:disconnect"
-  | "agent:prompt"
-  | "agent:reply"
-  | "observer:sync"
-  | "error";
-
-/** Shape of a WebSocket event payload. */
-export interface WSEvent {
-  type: WSEventType;
-  payload: Record<string, unknown>;
-  timestamp: string;
-}
-
 /** Agent registration request body. */
 export interface RegisterAgentRequest {
   name: string;
@@ -83,4 +63,24 @@ export interface TranscriptExport {
     content: string;
     timestamp: string;
   }[];
+}
+
+/** Events sent over the WebSocket connection. */
+export type WSEventType =
+  | "conversation:start"
+  | "conversation:message"
+  | "conversation:synthesis"
+  | "conversation:end"
+  | "agent:connect"
+  | "agent:disconnect"
+  | "agent:prompt"
+  | "agent:reply"
+  | "observer:sync"
+  | "error";
+
+/** Shape of a WebSocket event payload. */
+export interface WSEvent {
+  type: WSEventType;
+  payload: Record<string, unknown>;
+  timestamp: string;
 }
