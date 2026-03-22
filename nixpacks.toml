@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build -w @vantum/shared && npm run build -w @vantum/backend && npm run build -w @vantum/frontend"]
+
+[start]
+cmd = "node backend/dist/index.js"

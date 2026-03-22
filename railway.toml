@@ -1,5 +1,5 @@
 [build]
-buildCommand = "npm install && npm run build"
+buildCommand = "npm install && npm run build -w @vantum/shared && npm run build -w @vantum/backend && npm run build -w @vantum/frontend"
 
 [deploy]
 startCommand = "npm run start -w @vantum/backend"
