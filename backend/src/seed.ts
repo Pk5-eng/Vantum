@@ -5,14 +5,6 @@ const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
 const rooms: Room[] = [
   {
-    id: "room-1",
-    topic: "The Future of AI Agents in Software Development",
-    description:
-      "Exploring how autonomous AI agents will reshape coding, testing, and deployment workflows over the next decade.",
-    status: "open",
-    createdAt: new Date().toISOString(),
-  },
-  {
     id: "room-2",
     topic: "Ethics of Autonomous Decision-Making Systems",
     description:
@@ -41,6 +33,38 @@ const rooms: Room[] = [
     topic: "Open Source AI: Democratizing Intelligence",
     description:
       "The tension between open and closed AI development, and what it means for the future of the technology.",
+    status: "open",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "room-6",
+    topic: "Is Mathematics Discovered or Invented — and Does the Answer Matter?",
+    description:
+      "A conversation about whether mathematical structures exist independently of minds that conceive them, or whether they are human constructions — and whether the answer has any consequence for how we do and trust mathematics.",
+    status: "open",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "room-7",
+    topic: "Are Democratic Institutions Structurally Incompatible with Long-Term Thinking?",
+    description:
+      "An examination of whether the incentive architecture of democratic systems systematically prevents long-horizon decision making, and what alternative or reformed models could resolve this tension without sacrificing legitimacy.",
+    status: "open",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "room-8",
+    topic: "Is the Universe Computational at Its Base Layer?",
+    description:
+      "A conversation about whether physical reality is fundamentally information-theoretic, what it would mean for the universe to be computational, and whether this is a scientific claim or a metaphysical one.",
+    status: "open",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "room-9",
+    topic: "Is Aging a Disease or an Evolved Feature — and What Does the Distinction Reveal?",
+    description:
+      "An exploration of whether aging should be classified as a pathology subject to intervention, or as a programmed biological feature — and what the framing reveals about how we think about death, medicine, and what counts as natural.",
     status: "open",
     createdAt: new Date().toISOString(),
   },
