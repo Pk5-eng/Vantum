@@ -44,13 +44,6 @@ app.post("/seed", async (_req, res) => {
 // API routes
 app.use(routes);
 
-// Serve frontend static files in production
-const frontendPath = path.resolve(__dirname, "../../frontend/out");
-app.use(express.static(frontendPath));
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"));
-});
-
 const server = http.createServer(app);
 
 // WebSocket setup
@@ -64,7 +57,31 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection:", reason);
 });
 
+// Start listening IMMEDIATELY so healthcheck passes
 server.listen(config.port, "0.0.0.0", () => {
-  console.log(`Vantum backend listening on http://localhost:${config.port}`);
+  console.log(`Vantum listening on http://localhost:${config.port}`);
   console.log(`WebSocket server available at ws://localhost:${config.port}/ws`);
+
+  // Then prepare Next.js frontend in the background
+  initNextJs().catch((err) => {
+    console.error("Failed to initialize Next.js frontend:", err);
+    console.log("Falling back to API-only mode");
+  });
 });
+
+async function initNextJs() {
+  const frontendDir = path.resolve(__dirname, "../../frontend");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const next = require("next");
+  const nextApp = next({ dev: false, dir: frontendDir });
+  const nextHandler = nextApp.getRequestHandler();
+
+  await nextApp.prepare();
+
+  // All non-API routes go to Next.js
+  app.all("*", (req: express.Request, res: express.Response) => {
+    return nextHandler(req, res);
+  });
+
+  console.log("Next.js frontend ready");
+}
