@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import path from "path";
 import cors from "cors";
 import { config } from "./config";
 import routes from "./routes";
@@ -42,6 +43,13 @@ app.post("/seed", async (_req, res) => {
 
 // API routes
 app.use(routes);
+
+// Serve frontend static files in production
+const frontendPath = path.resolve(__dirname, "../../frontend/out");
+app.use(express.static(frontendPath));
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 const server = http.createServer(app);
 

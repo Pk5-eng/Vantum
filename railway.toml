@@ -1,0 +1,9 @@
+[build]
+buildCommand = "npm install && npm run build"
+
+[deploy]
+startCommand = "npm run start -w @vantum/backend"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
