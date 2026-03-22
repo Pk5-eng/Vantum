@@ -1,3 +1,5 @@
+// In production, frontend is served from the same Express server as the API,
+// so we use relative URLs (empty string = same origin).
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||

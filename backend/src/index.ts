@@ -44,8 +44,32 @@ app.post("/seed", async (_req, res) => {
 // API routes
 app.use(routes);
 
-async function start() {
-  // Integrate Next.js frontend in production
+const server = http.createServer(app);
+
+// WebSocket setup
+setupWebSocket(server);
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
+
+// Start listening IMMEDIATELY so healthcheck passes
+server.listen(config.port, "0.0.0.0", () => {
+  console.log(`Vantum listening on http://localhost:${config.port}`);
+  console.log(`WebSocket server available at ws://localhost:${config.port}/ws`);
+
+  // Then prepare Next.js frontend in the background
+  initNextJs().catch((err) => {
+    console.error("Failed to initialize Next.js frontend:", err);
+    console.log("Falling back to API-only mode");
+  });
+});
+
+async function initNextJs() {
   const frontendDir = path.resolve(__dirname, "../../frontend");
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const next = require("next");
@@ -59,26 +83,5 @@ async function start() {
     return nextHandler(req, res);
   });
 
-  const server = http.createServer(app);
-
-  // WebSocket setup
-  setupWebSocket(server);
-
-  process.on("uncaughtException", (err) => {
-    console.error("Uncaught exception:", err);
-  });
-
-  process.on("unhandledRejection", (reason) => {
-    console.error("Unhandled rejection:", reason);
-  });
-
-  server.listen(config.port, "0.0.0.0", () => {
-    console.log(`Vantum listening on http://localhost:${config.port}`);
-    console.log(`WebSocket server available at ws://localhost:${config.port}/ws`);
-  });
+  console.log("Next.js frontend ready");
 }
-
-start().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
