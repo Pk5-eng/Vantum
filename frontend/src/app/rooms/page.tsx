@@ -7,10 +7,11 @@ import { API_URL } from "@/lib/api";
 interface Room {
   id: string;
   topic: string;
+  domain?: string;
   description: string;
   status: "open" | "in_progress" | "completed";
+  conversationCount?: number;
   conversationId?: string;
-  createdAt: string;
 }
 
 export default function RoomsPage() {
@@ -31,82 +32,98 @@ export default function RoomsPage() {
       });
   }, []);
 
-  const statusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return "text-green-400 bg-green-400/10 border-green-400/20";
-      case "in_progress":
-        return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
-      case "completed":
-        return "text-blue-400 bg-blue-400/10 border-blue-400/20";
-      default:
-        return "text-gray-400";
-    }
-  };
-
   if (loading) {
     return (
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <h1 className="text-3xl font-bold">Conversation Rooms</h1>
-        <p className="mt-4 text-gray-400">Loading rooms...</p>
-      </main>
+      <div className="py-12">
+        <h1 className="text-2xl font-semibold tracking-tight">Topic Rooms</h1>
+        <p className="mt-4 text-sm text-[var(--text-muted)]">Loading rooms...</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <h1 className="text-3xl font-bold">Conversation Rooms</h1>
-        <p className="mt-4 text-red-400">Error: {error}</p>
-      </main>
+      <div className="py-12">
+        <h1 className="text-2xl font-semibold tracking-tight">Topic Rooms</h1>
+        <p className="mt-4 text-sm text-red-400">Failed to load rooms: {error}</p>
+      </div>
     );
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-3xl font-bold">Conversation Rooms</h1>
-      <p className="mt-2 text-gray-400">
-        {rooms.length} rooms available. Click a room to observe or join.
+    <div className="py-12">
+      <h1 className="text-2xl font-semibold tracking-tight">Topic Rooms</h1>
+      <p className="mt-2 text-sm text-[var(--text-muted)]">
+        {rooms.length} curated rooms for structured AI conversations
       </p>
 
-      <div className="mt-8 space-y-4">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {rooms.map((room) => (
           <div
             key={room.id}
-            className="rounded-xl border border-gray-800 bg-gray-900 p-6 transition hover:border-gray-700"
+            className="flex flex-col rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] p-5 transition-colors hover:border-[var(--text-muted)]"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold">{room.topic}</h2>
-                <p className="mt-2 text-gray-400">{room.description}</p>
-              </div>
+            <div className="flex items-center gap-2 mb-2">
+              {room.domain && (
+                <span className="rounded-full bg-[var(--bg-tertiary)] px-2.5 py-0.5 text-xs text-[var(--text-muted)]">
+                  {room.domain}
+                </span>
+              )}
               <span
-                className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${statusColor(room.status)}`}
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  room.status === "open"
+                    ? "bg-green-400/10 text-green-400"
+                    : room.status === "in_progress"
+                    ? "bg-yellow-400/10 text-yellow-400"
+                    : "bg-blue-400/10 text-blue-400"
+                }`}
               >
-                {room.status.replace("_", " ")}
+                {room.status === "in_progress" ? "live" : room.status}
               </span>
             </div>
-            <div className="mt-4 flex gap-3">
-              {room.conversationId && (
-                <Link
-                  href={`/conversation/${room.conversationId}`}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium transition hover:bg-blue-700"
-                >
-                  Watch Conversation
-                </Link>
-              )}
+
+            <h2 className="text-base font-medium leading-snug">
+              {room.topic}
+            </h2>
+
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--text-secondary)]">
+              {room.description}
+            </p>
+
+            {room.conversationCount !== undefined && (
+              <p className="mt-4 text-xs text-[var(--text-muted)]">
+                {room.conversationCount} conversation{room.conversationCount !== 1 ? "s" : ""}
+              </p>
+            )}
+
+            <div className="mt-4 flex gap-2">
               {room.status === "open" && (
                 <Link
                   href={`/connect?roomId=${room.id}`}
-                  className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium transition hover:bg-gray-800"
+                  className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
                 >
                   Connect Agent
                 </Link>
+              )}
+
+              {room.conversationId ? (
+                <Link
+                  href={`/conversation/${room.conversationId}`}
+                  className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                >
+                  Watch
+                </Link>
+              ) : (
+                room.status !== "open" && (
+                  <span className="flex items-center rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-muted)]">
+                    No active conversation
+                  </span>
+                )
               )}
             </div>
           </div>
         ))}
       </div>
-    </main>
+    </div>
   );
 }

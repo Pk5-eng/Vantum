@@ -21,6 +21,64 @@ interface ConversationData {
   messages: Message[];
 }
 
+type Status = "loading" | "waiting" | "active" | "concluding" | "completed";
+
+function StatusBadge({ status, connected }: { status: Status; connected: boolean }) {
+  const config: Record<Status, { label: string; dotClass: string; textClass: string }> = {
+    loading: { label: "Loading", dotClass: "bg-[var(--text-muted)]", textClass: "text-[var(--text-muted)]" },
+    waiting: { label: "Waiting for agent", dotClass: "bg-[var(--warning)] animate-pulse", textClass: "text-[var(--warning)]" },
+    active: { label: "In conversation", dotClass: "bg-[var(--success)] animate-pulse", textClass: "text-[var(--success)]" },
+    concluding: { label: "Concluding", dotClass: "bg-[var(--warning)]", textClass: "text-[var(--warning)]" },
+    completed: { label: "Complete", dotClass: "bg-[var(--text-muted)]", textClass: "text-[var(--text-muted)]" },
+  };
+  const { label, dotClass, textClass } = config[status];
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`flex items-center gap-1.5 text-xs ${textClass}`}>
+        <span className={`inline-block h-1.5 w-1.5 rounded-full ${dotClass}`} />
+        {label}
+      </span>
+      {connected && status !== "completed" && (
+        <span className="flex items-center gap-1 text-xs text-[var(--success)]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+          live
+        </span>
+      )}
+    </div>
+  );
+}
+
+function MessageBubble({ msg }: { msg: Message }) {
+  const isHost = msg.role === "host";
+  const time = new Date(msg.timestamp).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <div className={`flex ${isHost ? "justify-start" : "justify-end"}`}>
+      <div
+        className={`max-w-[70%] rounded-lg px-4 py-3 ${
+          isHost
+            ? "bg-indigo-950/40 border border-indigo-900/50"
+            : "bg-blue-950/40 border border-blue-900/50"
+        }`}
+      >
+        <div className="mb-1 flex items-center gap-2">
+          <span className={`text-xs font-medium ${isHost ? "text-indigo-400" : "text-blue-400"}`}>
+            {msg.agentName || (isHost ? "Host" : "Guest")}
+          </span>
+          <span className="text-[10px] text-[var(--text-muted)]">{time}</span>
+        </div>
+        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+          {msg.content}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function ConversationPage() {
   const params = useParams();
   const conversationId = params.id as string;
@@ -28,11 +86,21 @@ export default function ConversationPage() {
   const [conversation, setConversation] = useState<ConversationData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [synthesis, setSynthesis] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>("loading");
+  const [status, setStatus] = useState<Status>("loading");
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [currentAct, setCurrentAct] = useState(1);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+
+  const turnCount = messages.length;
+
+  // Update act based on turn count (rough heuristic: 3 acts over conversation)
+  useEffect(() => {
+    if (turnCount <= 4) setCurrentAct(1);
+    else if (turnCount <= 8) setCurrentAct(2);
+    else setCurrentAct(3);
+  }, [turnCount]);
 
   // Load initial conversation data
   useEffect(() => {
@@ -45,7 +113,7 @@ export default function ConversationPage() {
         const conv = data.conversation;
         setConversation(conv);
         setMessages(conv.messages || []);
-        setStatus(conv.status);
+        setStatus(conv.status as Status);
         if (conv.synthesis) setSynthesis(conv.synthesis);
       })
       .catch((err) => setError(err.message));
@@ -56,17 +124,26 @@ export default function ConversationPage() {
     if (!conversation) return;
 
     const wsUrl = `${WS_URL}?roomId=${conversation.roomId}&observer=true`;
-
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
+    ws.onclose = () => {
+      setConnected(false);
+      // Reconnect if not completed
+      if (status !== "completed") {
+        setTimeout(() => {
+          if (wsRef.current === ws) {
+            // re-trigger by setting conversation
+            setConversation((c) => c ? { ...c } : c);
+          }
+        }, 3000);
+      }
+    };
     ws.onerror = () => setConnected(false);
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-
       switch (data.type) {
         case "conversation:message":
           setMessages((prev) => [...prev, data.payload.message]);
@@ -74,6 +151,7 @@ export default function ConversationPage() {
           break;
         case "conversation:synthesis":
           setSynthesis(data.payload.synthesis);
+          setStatus("concluding");
           break;
         case "conversation:end":
           setStatus("completed");
@@ -87,123 +165,128 @@ export default function ConversationPage() {
     return () => {
       ws.close();
     };
-  }, [conversation]);
+  }, [conversation, status]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages, synthesis]);
 
   const handleExport = () => {
-    window.open(
-      `${API_URL}/api/conversations/${conversationId}/export`,
-      "_blank"
-    );
+    const transcript = messages
+      .map(
+        (m) =>
+          `[${new Date(m.timestamp).toLocaleTimeString()}] ${m.role.toUpperCase()} (${m.agentName || m.role}): ${m.content}`
+      )
+      .join("\n\n");
+
+    if (synthesis) {
+      const full = transcript + "\n\n--- SYNTHESIS ---\n\n" + synthesis;
+      downloadText(full);
+    } else {
+      downloadText(transcript);
+    }
   };
 
   if (error) {
     return (
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <p className="text-red-400">Error: {error}</p>
-      </main>
+      <div className="py-12">
+        <p className="text-sm text-red-400">Error: {error}</p>
+      </div>
     );
   }
 
   if (!conversation) {
     return (
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <p className="text-gray-400">Loading conversation...</p>
-      </main>
+      <div className="py-12">
+        <p className="text-sm text-[var(--text-muted)]">Loading conversation...</p>
+      </div>
     );
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{conversation.topic}</h1>
-          <div className="mt-2 flex items-center gap-3 text-sm text-gray-400">
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                status === "active"
-                  ? "border-yellow-400/20 bg-yellow-400/10 text-yellow-400"
-                  : status === "completed"
-                    ? "border-blue-400/20 bg-blue-400/10 text-blue-400"
-                    : "border-gray-600 bg-gray-800 text-gray-400"
-              }`}
-            >
-              {status === "active" && (
-                <span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse-dot" />
-              )}
-              {status}
-            </span>
-            {connected && (
-              <span className="inline-flex items-center gap-1.5 text-green-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                live
-              </span>
-            )}
-          </div>
-        </div>
-        {status === "completed" && (
-          <button
-            onClick={handleExport}
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium transition hover:bg-gray-800"
-          >
-            Export Transcript
-          </button>
-        )}
-      </div>
-
-      <div className="mt-8 space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`rounded-xl p-5 ${
-              msg.role === "host"
-                ? "border border-blue-900/40 bg-blue-950/30"
-                : "border border-green-900/40 bg-green-950/30"
-            }`}
-          >
-            <div className="flex items-center gap-2 text-sm">
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col py-4">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+        <div className="flex items-center gap-4">
+          <StatusBadge status={status} connected={connected} />
+          <div className="flex gap-1 text-xs text-[var(--text-muted)]">
+            {[1, 2, 3].map((act) => (
               <span
-                className={`font-semibold ${
-                  msg.role === "host" ? "text-blue-400" : "text-green-400"
+                key={act}
+                className={`rounded px-2 py-0.5 ${
+                  act === currentAct
+                    ? "bg-[var(--accent)] text-white"
+                    : act < currentAct
+                    ? "bg-[var(--bg-tertiary)] text-[var(--text-secondary)]"
+                    : "bg-[var(--bg-tertiary)] text-[var(--text-muted)]"
                 }`}
               >
-                {msg.role === "host" ? "Host" : "Guest"}
+                Act {act}
               </span>
-              <span className="text-gray-600">&middot;</span>
-              <span className="text-gray-500">
-                {new Date(msg.timestamp).toLocaleTimeString()}
-              </span>
-            </div>
-            <p className="mt-2 text-gray-200 leading-relaxed whitespace-pre-wrap">
-              {msg.content}
-            </p>
+            ))}
           </div>
-        ))}
+        </div>
 
-        {status === "active" && messages.length > 0 && (
-          <div className="flex items-center gap-2 py-4 text-gray-500">
-            <span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse-dot" />
-            <span className="text-sm">Waiting for next message...</span>
-          </div>
-        )}
-
-        {synthesis && (
-          <div className="rounded-xl border border-purple-900/40 bg-purple-950/30 p-6">
-            <h3 className="text-lg font-semibold text-purple-400">
-              Concluding Synthesis
-            </h3>
-            <p className="mt-3 text-gray-200 leading-relaxed whitespace-pre-wrap">
-              {synthesis}
-            </p>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-[var(--text-muted)]">Turn {turnCount}</span>
+          {status === "completed" && (
+            <button
+              onClick={handleExport}
+              className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            >
+              Export Transcript
+            </button>
+          )}
+        </div>
       </div>
-    </main>
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto py-6">
+        {messages.length === 0 && (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-[var(--text-muted)]">
+              {status === "waiting"
+                ? "Waiting for agents to connect..."
+                : "Conversation starting..."}
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} />
+          ))}
+
+          {status === "active" && messages.length > 0 && (
+            <div className="flex items-center justify-center gap-2 py-4">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)] animate-pulse-dot" />
+              <span className="text-xs text-[var(--text-muted)]">Waiting for next message...</span>
+            </div>
+          )}
+
+          {synthesis && (
+            <div className="rounded-lg border border-purple-900/40 bg-purple-950/30 p-5">
+              <h3 className="text-sm font-semibold text-purple-400">Concluding Synthesis</h3>
+              <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-[var(--text-secondary)]">
+                {synthesis}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
+}
+
+function downloadText(text: string) {
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `vantum-transcript-${Date.now()}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
