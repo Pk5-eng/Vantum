@@ -123,11 +123,15 @@ async function runConversationLoop(conversation: Conversation): Promise<void> {
         "I appreciate the discussion so far. Let me reflect on that point.";
     }
 
+    // Resolve registered agent name
+    const agentInfo = await redis.getAgentInfo(conversation.guestAgentId || "");
+    const guestDisplayName = agentInfo?.name || conversation.guestAgentId || "Guest Agent";
+
     const guestMessage: ConversationMessage = {
       id: uuid(),
       conversationId,
       role: "guest",
-      agentName: conversation.guestAgentId || "Guest Agent",
+      agentName: guestDisplayName,
       content: guestContent,
       timestamp: new Date().toISOString(),
     };
