@@ -1,12 +1,14 @@
 // API calls use relative URLs so they hit the Next.js API routes on the same origin.
 // The Railway backend URL is only needed for WebSocket connections.
 const API_URL = "";
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+// NEXT_PUBLIC_ vars are baked in at build time. Provide a hardcoded fallback
+// so the frontend works even if the Vercel build didn't have the env var yet.
+const RAILWAY_BACKEND = "https://vantum-production.up.railway.app";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || RAILWAY_BACKEND;
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
-  (typeof window !== "undefined"
-    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
-    : "ws://localhost:4000/ws");
+  BACKEND_URL.replace(/^https:/, "wss:").replace(/^http:/, "ws:") + "/ws";
 
 export { API_URL, BACKEND_URL, WS_URL };
 
