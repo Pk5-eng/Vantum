@@ -119,53 +119,84 @@ export default function ConversationPage() {
       .catch((err) => setError(err.message));
   }, [conversationId]);
 
-  // Connect WebSocket for live updates
+  // Connect WebSocket for live updates, fall back to polling if unavailable
   useEffect(() => {
     if (!conversation) return;
 
-    const wsUrl = `${WS_URL}?roomId=${conversation.roomId}&observer=true`;
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
+    let pollInterval: NodeJS.Timeout | undefined;
 
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => {
-      setConnected(false);
-      // Reconnect if not completed
-      if (status !== "completed") {
-        setTimeout(() => {
-          if (wsRef.current === ws) {
-            // re-trigger by setting conversation
-            setConversation((c) => c ? { ...c } : c);
-          }
-        }, 3000);
-      }
-    };
-    ws.onerror = () => setConnected(false);
+    // Try WebSocket first
+    try {
+      const wsUrl = `${WS_URL}?roomId=${conversation.roomId}&observer=true`;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      switch (data.type) {
-        case "conversation:message":
-          setMessages((prev) => [...prev, data.payload.message]);
-          setStatus("active");
-          break;
-        case "conversation:synthesis":
-          setSynthesis(data.payload.synthesis);
-          setStatus("concluding");
-          break;
-        case "conversation:end":
-          setStatus("completed");
-          break;
-        case "conversation:start":
-          setStatus("active");
-          break;
-      }
-    };
+      ws.onopen = () => setConnected(true);
+      ws.onclose = () => {
+        setConnected(false);
+        // If not completed, fall back to polling
+        if (status !== "completed") {
+          pollInterval = startPolling(conversationId);
+        }
+      };
+      ws.onerror = () => {
+        setConnected(false);
+        // WebSocket unavailable (e.g. Vercel), fall back to polling
+        if (!pollInterval && status !== "completed") {
+          pollInterval = startPolling(conversationId);
+        }
+      };
 
-    return () => {
-      ws.close();
-    };
-  }, [conversation, status]);
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        switch (data.type) {
+          case "conversation:message":
+            setMessages((prev) => [...prev, data.payload.message]);
+            setStatus("active");
+            break;
+          case "conversation:synthesis":
+            setSynthesis(data.payload.synthesis);
+            setStatus("concluding");
+            break;
+          case "conversation:end":
+            setStatus("completed");
+            break;
+          case "conversation:start":
+            setStatus("active");
+            break;
+        }
+      };
+
+      return () => {
+        ws.close();
+        if (pollInterval) clearInterval(pollInterval);
+      };
+    } catch {
+      // WebSocket not available, use polling
+      pollInterval = startPolling(conversationId);
+      return () => {
+        if (pollInterval) clearInterval(pollInterval);
+      };
+    }
+
+    function startPolling(cid: string): NodeJS.Timeout {
+      return setInterval(() => {
+        fetch(`${API_URL}/api/conversations/${cid}`)
+          .then((res) => res.ok ? res.json() : null)
+          .then((data) => {
+            if (!data) return;
+            const conv = data.conversation;
+            setMessages(conv.messages || []);
+            setStatus(conv.status as Status);
+            if (conv.synthesis) setSynthesis(conv.synthesis);
+            if (conv.status === "completed" && pollInterval) {
+              clearInterval(pollInterval);
+            }
+          })
+          .catch(() => {});
+      }, 3000);
+    }
+  }, [conversation, status, conversationId]);
 
   // Auto-scroll
   useEffect(() => {
