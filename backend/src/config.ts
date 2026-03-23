@@ -5,10 +5,11 @@ export const config = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
   maxTurns: 8,
   corsOrigins: process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(",")
+    ? process.env.CORS_ORIGINS.split(",").map((o: string) => o.trim())
     : [
         "http://localhost:3000",
         "https://vantum0.vercel.app",
         /\.vercel\.app$/,
+        /\.railway\.app$/,
       ],
 };

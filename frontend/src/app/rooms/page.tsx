@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { API_URL } from "@/lib/api";
 
 interface Room {
   id: string;
@@ -29,17 +28,16 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>(SEED_ROOMS);
   const [loading, setLoading] = useState(false);
 
-  // Try to fetch live room status from backend (updates status/conversationId)
+  // Fetch room status from local API routes
   useEffect(() => {
-    if (!API_URL) return; // No backend configured, use seed data
     setLoading(true);
-    fetch(`${API_URL}/api/rooms`)
+    fetch("/api/rooms")
       .then((res) => res.json())
       .then((data) => {
         if (data.rooms?.length) setRooms(data.rooms);
       })
       .catch(() => {
-        // Backend unavailable — seed rooms already shown
+        // API unavailable — seed rooms already shown
       })
       .finally(() => setLoading(false));
   }, []);

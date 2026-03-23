@@ -1,13 +1,14 @@
-// In production, frontend is served from the same Express server as the API,
-// so we use relative URLs (empty string = same origin).
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+// API calls use relative URLs so they hit the Next.js API routes on the same origin.
+// The Railway backend URL is only needed for WebSocket connections.
+const API_URL = "";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
   (typeof window !== "undefined"
     ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
     : "ws://localhost:4000/ws");
 
-export { API_URL, WS_URL };
+export { API_URL, BACKEND_URL, WS_URL };
 
 export async function fetchRooms() {
   const res = await fetch(`${API_URL}/api/rooms`, { cache: "no-store" });

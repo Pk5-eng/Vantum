@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { API_URL, WS_URL } from "@/lib/api";
+import { API_URL, BACKEND_URL, WS_URL } from "@/lib/api";
 
 interface Room {
   id: string;
@@ -351,19 +351,28 @@ function ConnectContent() {
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
-  const [backendAvailable, setBackendAvailable] = useState(!!API_URL);
+  const [backendAvailable, setBackendAvailable] = useState(!!BACKEND_URL);
 
-  // Try to fetch live room status from backend
+  // Fetch rooms from local API routes and check Railway backend health
   useEffect(() => {
-    if (!API_URL) return;
-    fetch(`${API_URL}/api/rooms`)
+    // Always fetch rooms from local Next.js API routes (relative URL)
+    fetch("/api/rooms")
       .then((res) => res.json())
       .then((data) => {
         if (data.rooms?.length) {
           setRooms(data.rooms.filter((r: Room) => r.status === "open"));
         }
-        setBackendAvailable(true);
       })
+      .catch(() => {/* fall back to seed rooms */});
+
+    // Check Railway backend availability for live WebSocket conversations
+    if (!BACKEND_URL) {
+      setBackendAvailable(false);
+      return;
+    }
+    fetch(`${BACKEND_URL}/health`)
+      .then((res) => res.json())
+      .then((data) => setBackendAvailable(data.status === "ok"))
       .catch(() => setBackendAvailable(false));
   }, []);
 
@@ -373,7 +382,7 @@ function ConnectContent() {
     setRegistering(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/register`, {
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, role: "guest", roomId }),
@@ -396,9 +405,11 @@ function ConnectContent() {
     : "";
 
   // Substitute actual URLs into code examples
-  const curlCode = CURL_REGISTER.replace(/{API_URL}/g, API_URL);
-  const pythonCode = PYTHON_FULL.replace(/{API_URL}/g, API_URL).replace(/{WS_URL}/g, WS_URL);
-  const jsCode = JS_FULL.replace(/{API_URL}/g, API_URL).replace(/{WS_URL}/g, WS_URL);
+  // Code examples show the Railway backend URL for external agent connections
+  const exampleApiUrl = BACKEND_URL || (typeof window !== "undefined" ? window.location.origin : "");
+  const curlCode = CURL_REGISTER.replace(/{API_URL}/g, exampleApiUrl);
+  const pythonCode = PYTHON_FULL.replace(/{API_URL}/g, exampleApiUrl).replace(/{WS_URL}/g, WS_URL);
+  const jsCode = JS_FULL.replace(/{API_URL}/g, exampleApiUrl).replace(/{WS_URL}/g, WS_URL);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 py-12">
@@ -443,9 +454,10 @@ function ConnectContent() {
       {/* Backend status notice */}
       {!backendAvailable && (
         <div className="rounded-lg border border-yellow-800/50 bg-yellow-950/20 p-4">
-          <p className="text-xs text-yellow-400 font-medium mb-1">Backend not connected</p>
+          <p className="text-xs text-yellow-400 font-medium mb-1">Live backend unavailable</p>
           <p className="text-xs text-[var(--text-muted)]">
-            The Vantum backend is required for live conversations. Set the <code className="text-yellow-400">NEXT_PUBLIC_API_URL</code> environment variable in Vercel to your Railway backend URL.
+            The Railway backend is not reachable. Live WebSocket conversations are disabled.
+            You can still register agents and start demo conversations. To enable live mode, ensure the Railway backend is running and <code className="text-yellow-400">NEXT_PUBLIC_API_URL</code> is set correctly.
           </p>
         </div>
       )}
@@ -539,7 +551,7 @@ function ConnectContent() {
               <button
                 onClick={() => {
                   setError(null);
-                  fetch(`${API_URL}/api/rooms/${credentials.roomId}/start`, {
+                  fetch(`/api/rooms/${credentials.roomId}/start`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ agentId: credentials.agentId }),
