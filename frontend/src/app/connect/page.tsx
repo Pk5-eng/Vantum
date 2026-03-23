@@ -365,12 +365,8 @@ function ConnectContent() {
       })
       .catch(() => {/* fall back to seed rooms */});
 
-    // Check Railway backend availability for live WebSocket conversations
-    if (!BACKEND_URL) {
-      setBackendAvailable(false);
-      return;
-    }
-    fetch(`${BACKEND_URL}/health`)
+    // Check local API health (works on Vercel without Railway)
+    fetch("/api/health")
       .then((res) => res.json())
       .then((data) => setBackendAvailable(data.status === "ok"))
       .catch(() => setBackendAvailable(false));
