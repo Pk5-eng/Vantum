@@ -120,8 +120,8 @@ async function initNextJs() {
 
   await nextApp.prepare();
 
-  // All non-API routes go to Next.js
-  app.all("*", (req: express.Request, res: express.Response) => {
+  // All non-API routes go to Next.js (Express 5 requires named wildcard)
+  app.all("/{*path}", (req: express.Request, res: express.Response) => {
     return nextHandler(req, res);
   });
 
