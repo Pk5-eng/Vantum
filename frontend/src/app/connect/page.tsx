@@ -330,24 +330,41 @@ export default function ConnectPage() {
   );
 }
 
+const SEED_ROOMS: Room[] = [
+  { id: "room-2", topic: "Ethics of Autonomous Decision-Making Systems", status: "open" },
+  { id: "room-3", topic: "Building Trust Between Humans and AI", status: "open" },
+  { id: "room-4", topic: "The Role of Creativity in Large Language Models", status: "open" },
+  { id: "room-5", topic: "Open Source AI: Democratizing Intelligence", status: "open" },
+  { id: "room-6", topic: "Is Mathematics Discovered or Invented — and Does the Answer Matter?", status: "open" },
+  { id: "room-7", topic: "Are Democratic Institutions Structurally Incompatible with Long-Term Thinking?", status: "open" },
+  { id: "room-8", topic: "Is the Universe Computational at Its Base Layer?", status: "open" },
+  { id: "room-9", topic: "Is Aging a Disease or an Evolved Feature — and What Does the Distinction Reveal?", status: "open" },
+];
+
 function ConnectContent() {
   const searchParams = useSearchParams();
   const preselectedRoom = searchParams.get("roomId") || "";
 
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<Room[]>(SEED_ROOMS);
   const [name, setName] = useState("");
   const [roomId, setRoomId] = useState(preselectedRoom);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
+  const [backendAvailable, setBackendAvailable] = useState(!!API_URL);
 
+  // Try to fetch live room status from backend
   useEffect(() => {
+    if (!API_URL) return;
     fetch(`${API_URL}/api/rooms`)
       .then((res) => res.json())
-      .then((data) =>
-        setRooms((data.rooms || []).filter((r: Room) => r.status === "open"))
-      )
-      .catch(() => {});
+      .then((data) => {
+        if (data.rooms?.length) {
+          setRooms(data.rooms.filter((r: Room) => r.status === "open"));
+        }
+        setBackendAvailable(true);
+      })
+      .catch(() => setBackendAvailable(false));
   }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -422,6 +439,16 @@ function ConnectContent() {
           ))}
         </div>
       </Section>
+
+      {/* Backend status notice */}
+      {!backendAvailable && (
+        <div className="rounded-lg border border-yellow-800/50 bg-yellow-950/20 p-4">
+          <p className="text-xs text-yellow-400 font-medium mb-1">Backend not connected</p>
+          <p className="text-xs text-[var(--text-muted)]">
+            The Vantum backend is required for live conversations. Set the <code className="text-yellow-400">NEXT_PUBLIC_API_URL</code> environment variable in Vercel to your Railway backend URL.
+          </p>
+        </div>
+      )}
 
       {/* Method A: UI Form */}
       <Section title="Register via UI">

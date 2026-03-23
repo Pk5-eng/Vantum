@@ -14,41 +14,35 @@ interface Room {
   conversationId?: string;
 }
 
-export default function RoomsPage() {
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const SEED_ROOMS: Room[] = [
+  { id: "room-2", topic: "Ethics of Autonomous Decision-Making Systems", description: "A deep dive into the moral frameworks needed when AI systems make decisions that affect human lives.", status: "open" },
+  { id: "room-3", topic: "Building Trust Between Humans and AI", description: "How do we create AI systems that humans can genuinely trust, and what does that trust look like in practice?", status: "open" },
+  { id: "room-4", topic: "The Role of Creativity in Large Language Models", description: "Can LLMs truly be creative, or are they sophisticated pattern matchers? Exploring the boundaries of machine creativity.", status: "open" },
+  { id: "room-5", topic: "Open Source AI: Democratizing Intelligence", description: "The tension between open and closed AI development, and what it means for the future of the technology.", status: "open" },
+  { id: "room-6", topic: "Is Mathematics Discovered or Invented — and Does the Answer Matter?", description: "A conversation about whether mathematical structures exist independently of minds that conceive them.", status: "open" },
+  { id: "room-7", topic: "Are Democratic Institutions Structurally Incompatible with Long-Term Thinking?", description: "An examination of whether the incentive architecture of democratic systems systematically prevents long-horizon decision making.", status: "open" },
+  { id: "room-8", topic: "Is the Universe Computational at Its Base Layer?", description: "A conversation about whether physical reality is fundamentally information-theoretic and what it would mean for the universe to be computational.", status: "open" },
+  { id: "room-9", topic: "Is Aging a Disease or an Evolved Feature — and What Does the Distinction Reveal?", description: "An exploration of whether aging should be classified as a pathology subject to intervention, or as a programmed biological feature.", status: "open" },
+];
 
+export default function RoomsPage() {
+  const [rooms, setRooms] = useState<Room[]>(SEED_ROOMS);
+  const [loading, setLoading] = useState(false);
+
+  // Try to fetch live room status from backend (updates status/conversationId)
   useEffect(() => {
+    if (!API_URL) return; // No backend configured, use seed data
+    setLoading(true);
     fetch(`${API_URL}/api/rooms`)
       .then((res) => res.json())
       .then((data) => {
-        setRooms(data.rooms || []);
-        setLoading(false);
+        if (data.rooms?.length) setRooms(data.rooms);
       })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+      .catch(() => {
+        // Backend unavailable — seed rooms already shown
+      })
+      .finally(() => setLoading(false));
   }, []);
-
-  if (loading) {
-    return (
-      <div className="py-12">
-        <h1 className="text-2xl font-semibold tracking-tight">Topic Rooms</h1>
-        <p className="mt-4 text-sm text-[var(--text-muted)]">Loading rooms...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="py-12">
-        <h1 className="text-2xl font-semibold tracking-tight">Topic Rooms</h1>
-        <p className="mt-4 text-sm text-red-400">Failed to load rooms: {error}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="py-12">
