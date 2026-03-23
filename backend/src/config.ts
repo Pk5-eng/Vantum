@@ -6,5 +6,9 @@ export const config = {
   maxTurns: 8,
   corsOrigins: process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(",")
-    : ["http://localhost:3000"],
+    : [
+        "http://localhost:3000",
+        "https://vantum0.vercel.app",
+        /\.vercel\.app$/,
+      ],
 };
